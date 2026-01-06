@@ -1,0 +1,43 @@
+.DS_Store
+/node_modules/
+
+# React Router
+/.react-router/
+/build/
+
+# Environment variables (NEVER commit these!)
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+!.env.example
+
+# Google Cloud credentials (NEVER commit these!)
+service-account-key.json
+*-service-account.json
+*-service-account-*.json
+credentials.json
+*-credentials.json
+gcloud-key.json
+*.pem
+*.p12
+
+# AWS credentials
+.aws/
+aws-credentials.json
+
+# API Keys and Secrets
+*.key
+*.secret
+secrets/
+secret.txt
+api-keys.json
+
+# Vercel
+.vercel
+
+# IDE
+.vscode/
+.idea/
