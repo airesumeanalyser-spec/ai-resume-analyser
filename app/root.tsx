@@ -26,15 +26,6 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const init = useApiStore((state) => state.init);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      init();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
-
   return (
     <html lang="en">
       <head>
@@ -53,6 +44,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const init = useApiStore((state) => state.init);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      init();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
+
   return <Outlet />;
 }
 
