@@ -1,4 +1,4 @@
-import { neon, neonConfig } from '@neondatabase/serverless';
+import { neon, neonConfig, type NeonQueryFunction } from '@neondatabase/serverless';
 
 // Disable connection cache to avoid stale prepared statements
 neonConfig.fetchConnectionCache = false;
@@ -9,11 +9,12 @@ const DATABASE_URL = process.env.DATABASE_URL;
 // Create SQL query function - fresh connection each time
 export const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
-// Ensure database is configured before operations
-function ensureDatabase() {
+// Ensure database is configured before operations and return non-null sql
+function ensureDatabase(): NeonQueryFunction<false, false> {
     if (!DATABASE_URL || !sql) {
         throw new Error('DATABASE_URL environment variable is not set. Please configure it in your Vercel environment variables.');
     }
+    return sql;
 }
 
 /**
@@ -22,10 +23,10 @@ function ensureDatabase() {
 
 // User operations
 export async function createUser(uuid: string, username: string, email?: string) {
-    ensureDatabase();
+    const db = ensureDatabase();
     // Use a simpler INSERT that doesn't require trial columns
     // The database defaults will handle trial_uses and max_trial_uses
-    const result = await sql`
+    const result = await db`
         INSERT INTO users (uuid, name, email)
         VALUES (${uuid}, ${username}, ${email || null})
         ON CONFLICT (uuid) DO UPDATE
@@ -36,14 +37,16 @@ export async function createUser(uuid: string, username: string, email?: string)
 }
 
 export async function getUserByUuid(uuid: string) {
-    const result = await sql`
+    const db = ensureDatabase();
+    const result = await db`
         SELECT * FROM users WHERE uuid = ${uuid} LIMIT 1
     `;
     return result[0] || null;
 }
 
 export async function getUserById(id: string) {
-    const result = await sql`
+    const db = ensureDatabase();
+    const result = await db`
         SELECT * FROM users WHERE id = ${id} LIMIT 1
     `;
     return result[0] || null;
@@ -103,7 +106,8 @@ export async function canUseFreeTrial(userId: string): Promise<boolean> {
 
 // Session operations
 export async function createSession(userId: string, sessionToken: string, expiresAt: Date) {
-    const result = await sql`
+    const db = ensureDatabase();
+    const result = await db`
         INSERT INTO sessions (user_id, session_token, expires_at)
         VALUES (${userId}, ${sessionToken}, ${expiresAt.toISOString()})
         RETURNING *
@@ -112,7 +116,8 @@ export async function createSession(userId: string, sessionToken: string, expire
 }
 
 export async function getSessionByToken(sessionToken: string) {
-    const result = await sql`
+    const db = ensureDatabase();
+    const result = await db`
         SELECT s.*, u.uuid, u.name as username, u.email
         FROM sessions s
         JOIN users u ON s.user_id = u.id
@@ -124,13 +129,15 @@ export async function getSessionByToken(sessionToken: string) {
 }
 
 export async function deleteSession(sessionToken: string) {
-    await sql`
+    const db = ensureDatabase();
+    await db`
         DELETE FROM sessions WHERE session_token = ${sessionToken}
     `;
 }
 
 export async function cleanupExpiredSessions() {
-    await sql`
+    const db = ensureDatabase();
+    await db`
         DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP
     `;
 }
@@ -144,7 +151,8 @@ export async function createResume(data: {
     mimeType?: string;
     gcsUrl?: string;
 }) {
-    const result = await sql`
+    const db = ensureDatabase();
+    const result = await db`
         INSERT INTO resumes (user_id, file_name, file_path, file_size, mime_type, gcs_url)
         VALUES (
             ${data.userId},
@@ -160,14 +168,16 @@ export async function createResume(data: {
 }
 
 export async function getResumeById(id: string) {
-    const result = await sql`
+    const db = ensureDatabase();
+    const result = await db`
         SELECT * FROM resumes WHERE id = ${id} LIMIT 1
     `;
     return result[0] || null;
 }
 
 export async function getResumesByUserId(userId: string, limit = 50) {
-    const result = await sql`
+    const db = ensureDatabase();
+    const result = await db`
         SELECT * FROM resumes
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
@@ -177,7 +187,8 @@ export async function getResumesByUserId(userId: string, limit = 50) {
 }
 
 export async function updateResumeAnalysis(id: string, analysisData: any, atsScore?: number) {
-    const result = await sql`
+    const db = ensureDatabase();
+    const result = await db`
         UPDATE resumes
         SET analysis_data = ${JSON.stringify(analysisData)},
             ats_score = ${atsScore || null}
@@ -188,21 +199,24 @@ export async function updateResumeAnalysis(id: string, analysisData: any, atsSco
 }
 
 export async function deleteResume(id: string) {
-    await sql`
+    const db = ensureDatabase();
+    await db`
         DELETE FROM resumes WHERE id = ${id}
     `;
 }
 
 // Key-Value store operations (backward compatible with Puter KV)
 export async function kvGet(key: string, userId?: string) {
+    const db = ensureDatabase();
     const result = userId
-        ? await sql`SELECT value FROM kv_store WHERE key = ${key} AND user_id = ${userId} LIMIT 1`
-        : await sql`SELECT value FROM kv_store WHERE key = ${key} AND user_id IS NULL LIMIT 1`;
+        ? await db`SELECT value FROM kv_store WHERE key = ${key} AND user_id = ${userId} LIMIT 1`
+        : await db`SELECT value FROM kv_store WHERE key = ${key} AND user_id IS NULL LIMIT 1`;
     return result[0]?.value || null;
 }
 
 export async function kvSet(key: string, value: string, userId?: string) {
-    await sql`
+    const db = ensureDatabase();
+    await db`
         INSERT INTO kv_store (key, value, user_id)
         VALUES (${key}, ${value}, ${userId || null})
         ON CONFLICT (key) DO UPDATE
@@ -212,24 +226,26 @@ export async function kvSet(key: string, value: string, userId?: string) {
 }
 
 export async function kvDelete(key: string, userId?: string) {
-    const result = userId
-        ? await sql`DELETE FROM kv_store WHERE key = ${key} AND user_id = ${userId}`
-        : await sql`DELETE FROM kv_store WHERE key = ${key} AND user_id IS NULL`;
+    const db = ensureDatabase();
+    userId
+        ? await db`DELETE FROM kv_store WHERE key = ${key} AND user_id = ${userId}`
+        : await db`DELETE FROM kv_store WHERE key = ${key} AND user_id IS NULL`;
     return true;
 }
 
 export async function kvList(pattern: string, returnValues = false, userId?: string) {
+    const db = ensureDatabase();
     // Convert simple wildcard pattern to SQL LIKE pattern
     const sqlPattern = pattern.replace(/\*/g, '%');
     
     const result = userId
-        ? await sql`
+        ? await db`
             SELECT key, value FROM kv_store
             WHERE key LIKE ${sqlPattern}
             AND user_id = ${userId}
             ORDER BY key
         `
-        : await sql`
+        : await db`
             SELECT key, value FROM kv_store
             WHERE key LIKE ${sqlPattern}
             AND user_id IS NULL
@@ -243,10 +259,11 @@ export async function kvList(pattern: string, returnValues = false, userId?: str
 }
 
 export async function kvFlush(userId?: string) {
+    const db = ensureDatabase();
     if (userId) {
-        await sql`DELETE FROM kv_store WHERE user_id = ${userId}`;
+        await db`DELETE FROM kv_store WHERE user_id = ${userId}`;
     } else {
-        await sql`DELETE FROM kv_store WHERE user_id IS NULL`;
+        await db`DELETE FROM kv_store WHERE user_id IS NULL`;
     }
     return true;
 }
@@ -254,8 +271,9 @@ export async function kvFlush(userId?: string) {
 // Database initialization
 export async function initializeDatabase() {
     try {
+        const db = ensureDatabase();
         // Test connection
-        await sql`SELECT 1`;
+        await db`SELECT 1`;
         console.log('✅ Database connection successful');
         return true;
     } catch (error) {
