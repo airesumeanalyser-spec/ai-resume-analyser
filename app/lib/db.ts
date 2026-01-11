@@ -7,11 +7,11 @@ neonConfig.fetchConnectionCache = false;
 const DATABASE_URL = process.env.DATABASE_URL;
 
 // Create SQL query function - fresh connection each time
-export const sql = DATABASE_URL ? neon(DATABASE_URL) : null as any;
+export const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
 // Ensure database is configured before operations
 function ensureDatabase() {
-    if (!DATABASE_URL) {
+    if (!DATABASE_URL || !sql) {
         throw new Error('DATABASE_URL environment variable is not set. Please configure it in your Vercel environment variables.');
     }
 }
