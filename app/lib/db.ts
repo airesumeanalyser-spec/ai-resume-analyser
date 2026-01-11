@@ -6,12 +6,15 @@ neonConfig.fetchConnectionCache = false;
 // Get database connection string from environment
 const DATABASE_URL = process.env.DATABASE_URL;
 
-if (!DATABASE_URL) {
-    throw new Error('DATABASE_URL environment variable is not set');
-}
-
 // Create SQL query function - fresh connection each time
-export const sql = neon(DATABASE_URL);
+export const sql = DATABASE_URL ? neon(DATABASE_URL) : null as any;
+
+// Ensure database is configured before operations
+function ensureDatabase() {
+    if (!DATABASE_URL) {
+        throw new Error('DATABASE_URL environment variable is not set. Please configure it in your Vercel environment variables.');
+    }
+}
 
 /**
  * Database helper functions
@@ -19,6 +22,7 @@ export const sql = neon(DATABASE_URL);
 
 // User operations
 export async function createUser(uuid: string, username: string, email?: string) {
+    ensureDatabase();
     // Use a simpler INSERT that doesn't require trial columns
     // The database defaults will handle trial_uses and max_trial_uses
     const result = await sql`

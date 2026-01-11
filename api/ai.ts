@@ -13,7 +13,8 @@ import {
 import { applyAISuggestions, analysisToSuggestions } from '../app/lib/resume-parser';
 import type { ChatMessage } from '../app/lib/ai';
 import { requireAuth, getAuthenticatedUser } from '../app/lib/auth';
-import { incrementTrialUsage, canUseFreeTrial } from '../app/lib/db';
+// TRIAL/PAYMENT DISABLED
+// import { incrementTrialUsage, canUseFreeTrial } from '../app/lib/db';
 
 /**
  * Unified AI endpoint handling multiple AI operations
@@ -77,10 +78,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return handleApplySuggestions(req, res);
             case 'extract-jd':
                 return handleExtractJD(req, res);
+            // TRIAL/PAYMENT DISABLED
+            // case 'use-trial':
+            //     return handleUseTrial(req, res, user);
+            // case 'check-trial':
+            //     return handleCheckTrial(req, res, user);
             case 'use-trial':
-                return handleUseTrial(req, res, user);
+                return res.status(200).json({ success: true, trial: { used: 0, remaining: 999, max: 999 } });
             case 'check-trial':
-                return handleCheckTrial(req, res, user);
+                return res.status(200).json({ success: true, canUseFreeTrial: true });
             default:
                 return res.status(400).json({
                     success: false,
@@ -688,10 +694,14 @@ Return ONLY valid JSON.`;
         });
     }
 }
+
+// TRIAL/PAYMENT DISABLED - These functions are no longer used
+/*
 /**
  * Handle trial usage check and decrement
  * This should be called before any analysis to track free trial usage
  */
+/*
 async function handleUseTrial(req: VercelRequest, res: VercelResponse, user: any) {
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
@@ -728,10 +738,13 @@ async function handleUseTrial(req: VercelRequest, res: VercelResponse, user: any
         });
     }
 }
+*/
 
+/*
 /**
  * Handle trial status check without decrementing
  */
+/*
 async function handleCheckTrial(req: VercelRequest, res: VercelResponse, user: any) {
     try {
         const canUse = await canUseFreeTrial(user.id);
@@ -748,3 +761,4 @@ async function handleCheckTrial(req: VercelRequest, res: VercelResponse, user: a
         });
     }
 }
+*/

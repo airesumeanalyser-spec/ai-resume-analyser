@@ -4,7 +4,8 @@ import FileUploader from "~/components/FileUploader";
 import JDUploader from "~/components/JDUploader";
 import UploadModeSelector from "~/components/UploadModeSelector";
 import Footer from "~/components/Footer";
-import TrialTracker from "~/components/TrialTracker";
+// TRIAL/PAYMENT DISABLED
+// import TrialTracker from "~/components/TrialTracker";
 import {useApiStore} from "~/lib/api";
 import {Link, useNavigate} from "react-router";
 import {convertPdfToImage} from "~/lib/pdf2img";
@@ -33,12 +34,13 @@ const Upload = () => {
         }
     }, [auth.isAuthenticated, isLoading, navigate]);
 
+    // TRIAL/PAYMENT DISABLED - Always allow usage
     // Check trial usage
     const checkTrialAvailable = (): boolean => {
-        if (trial.remaining <= 0) {
-            setStatusText(`Free trial limit reached (${trial.max}/${trial.max} uses). Please upgrade to continue.`);
-            return false;
-        }
+        // if (trial.remaining <= 0) {
+        //     setStatusText(`Free trial limit reached (${trial.max}/${trial.max} uses). Please upgrade to continue.`);
+        //     return false;
+        // }
         return true;
     };
 
@@ -832,10 +834,10 @@ const Upload = () => {
                     )}
                     {!isProcessing && (
                         <>
-                            {/* Real-time Trial Tracker */}
-                            <div className="max-w-md mx-auto mb-6">
+                            {/* TRIAL/PAYMENT DISABLED - Real-time Trial Tracker */}
+                            {/* <div className="max-w-md mx-auto mb-6">
                                 <TrialTracker />
-                            </div>
+                            </div> */}
                             
                             <UploadModeSelector 
                                 mode={uploadMode} 

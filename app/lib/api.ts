@@ -144,7 +144,8 @@ interface ApiStore {
     clearError: () => void;
 }
 
-const DEFAULT_TRIAL: TrialInfo = { used: 0, remaining: 3, max: 3 };
+// TRIAL/PAYMENT DISABLED - Always show unlimited access
+const DEFAULT_TRIAL: TrialInfo = { used: 0, remaining: 999, max: 999 };
 
 export const useApiStore = create<ApiStore>((set, get) => {
     const setError = (msg: string | null) => {

@@ -11,7 +11,8 @@ import {
     setSessionCookie,
     verifyStateToken,
 } from '../app/lib/auth';
-import { getTrialUsage } from '../app/lib/db';
+// TRIAL/PAYMENT DISABLED
+// import { getTrialUsage } from '../app/lib/db';
 
 /**
  * Unified Auth endpoint handling all authentication operations
@@ -120,6 +121,16 @@ async function handleSignOut(req: VercelRequest, res: VercelResponse) {
 
 async function handleStatus(req: VercelRequest, res: VercelResponse) {
     try {
+        // Check if database is configured
+        if (!process.env.DATABASE_URL) {
+            console.error('DATABASE_URL is not configured');
+            return res.status(200).json({
+                isAuthenticated: false,
+                user: null,
+                error: 'Database not configured',
+            });
+        }
+
         const user = await getAuthenticatedUser(req);
 
         if (!user) {
@@ -129,8 +140,13 @@ async function handleStatus(req: VercelRequest, res: VercelResponse) {
             });
         }
 
-        // Get real-time trial usage from database
-        const trialUsage = await getTrialUsage(user.id);
+        // TRIAL/PAYMENT DISABLED - No longer fetching trial usage
+        // let trialUsage = { used: 0, remaining: 3, max: 3 };
+        // try {
+        //     trialUsage = await getTrialUsage(user.id);
+        // } catch (trialError) {
+        //     console.warn('Failed to get trial usage, using defaults:', trialError);
+        // }
 
         return res.status(200).json({
             isAuthenticated: true,
@@ -139,18 +155,27 @@ async function handleStatus(req: VercelRequest, res: VercelResponse) {
                 username: user.username,
                 email: user.email,
             },
+            // TRIAL/PAYMENT DISABLED - Always show unlimited access
+            // trial: {
+            //     used: trialUsage.used,
+            //     remaining: trialUsage.remaining,
+            //     max: trialUsage.max,
+            // },
+            // plan_type: trialUsage.remaining > 0 ? 'free_trial' : 'free_expired',
             trial: {
-                used: trialUsage.used,
-                remaining: trialUsage.remaining,
-                max: trialUsage.max,
+                used: 0,
+                remaining: 999,
+                max: 999,
             },
-            plan_type: trialUsage.remaining > 0 ? 'free_trial' : 'free_expired',
+            plan_type: 'unlimited',
         });
     } catch (error) {
         console.error('Status check error:', error);
-        return res.status(500).json({
-            error: 'Internal server error',
-            message: error instanceof Error ? error.message : 'Unknown error',
+        // Return unauthenticated state instead of 500 error for better UX
+        return res.status(200).json({
+            isAuthenticated: false,
+            user: null,
+            error: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 }

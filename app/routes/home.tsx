@@ -3,8 +3,9 @@ import { useEffect } from "react";
 import Navbar from "~/components/Navbar"
 import Footer from "~/components/Footer";
 import {Link, useNavigate} from "react-router";
-import FreeTierWelcomeModal from "~/components/FreeTierWelcomeModal";
-import { useFreeTierWelcome } from "~/lib/useFreeTierWelcome";
+// TRIAL/PAYMENT DISABLED
+// import FreeTierWelcomeModal from "~/components/FreeTierWelcomeModal";
+// import { useFreeTierWelcome } from "~/lib/useFreeTierWelcome";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -15,12 +16,13 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Home() {
     const navigate = useNavigate();
-    const { showModal, dismissModal, freeTrialDaysRemaining } = useFreeTierWelcome();
+    // TRIAL/PAYMENT DISABLED\n    // const { showModal, dismissModal, freeTrialDaysRemaining } = useFreeTierWelcome();
 
 
 
     return <main className="bg-[url('/images/bg-main.svg')] bg-cover min-h-screen flex flex-col">
       <Navbar />
+      {/* TRIAL/PAYMENT DISABLED - FreeTierWelcomeModal
       <FreeTierWelcomeModal
         isOpen={showModal}
         onClose={dismissModal}
@@ -30,6 +32,7 @@ export default function Home() {
         }}
         freeTrialDaysRemaining={freeTrialDaysRemaining}
       />
+      */}
       <section className="main-section flex-1">
           <div className="page-heading py-16 text-center">
               <h1>Crack your dream job using AI</h1>
