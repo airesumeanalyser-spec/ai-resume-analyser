@@ -174,7 +174,7 @@ export async function analyzeResume(
 
     const response = await generateContent(prompt, {
         temperature: 0.3, // Lower temperature for consistent structured output
-        maxTokens: 8192, // Significantly increased to accommodate full analysis
+        maxTokens: 16384, // Increased to prevent truncation of comprehensive analysis
     });
 
     // Parse JSON response
@@ -205,7 +205,7 @@ export async function generateFeedback(
 
     return await generateContent(prompt, {
         temperature: 0.7,
-        maxTokens: 8192,  // Increased to maximum to prevent truncation
+        maxTokens: 16384,  // Increased to prevent truncation of large JSON responses
     });
 }
 
