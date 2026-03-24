@@ -216,12 +216,24 @@ export async function kvGet(key: string, userId?: string) {
 
 export async function kvSet(key: string, value: string, userId?: string) {
     const db = ensureDatabase();
-    await db`
-        INSERT INTO kv_store (key, value, user_id)
-        VALUES (${key}, ${value}, ${userId || null})
-        ON CONFLICT (key) DO UPDATE
-        SET value = ${value}, updated_at = CURRENT_TIMESTAMP
-    `;
+    // Use composite unique constraint (key, user_id)
+    // Handle NULL user_id with separate query paths since NULL != NULL in SQL
+    if (userId) {
+        await db`
+            INSERT INTO kv_store (key, value, user_id)
+            VALUES (${key}, ${value}, ${userId})
+            ON CONFLICT (key, user_id) DO UPDATE
+            SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+        `;
+    } else {
+        // For NULL user_id, first try to update existing, then insert if not exists
+        const existing = await db`SELECT id FROM kv_store WHERE key = ${key} AND user_id IS NULL LIMIT 1`;
+        if (existing.length > 0) {
+            await db`UPDATE kv_store SET value = ${value}, updated_at = CURRENT_TIMESTAMP WHERE key = ${key} AND user_id IS NULL`;
+        } else {
+            await db`INSERT INTO kv_store (key, value, user_id) VALUES (${key}, ${value}, NULL)`;
+        }
+    }
     return true;
 }
 

@@ -27,6 +27,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
+        const forwardedProto = (req.headers['x-forwarded-proto'] as string | undefined)?.split(',')[0]?.trim();
+        const forwardedHost = (req.headers['x-forwarded-host'] as string | undefined)?.split(',')[0]?.trim();
+        const host = forwardedHost || req.headers.host;
+        const protocol = forwardedProto || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
+        const requestBaseUrl = host
+            ? `${protocol}://${host}`
+            : process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : process.env.BASE_URL || 'http://localhost:5173';
+
         const { code, state, error: oauthError } = req.query;
 
         // Handle OAuth errors
@@ -40,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Get user info from Google
-        const googleUser = await getGoogleUserInfo(code);
+        const googleUser = await getGoogleUserInfo(code, requestBaseUrl);
 
         if (!googleUser.email) {
             return res.redirect(302, '/?error=no_email');
