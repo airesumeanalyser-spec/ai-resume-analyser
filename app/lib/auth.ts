@@ -1,4 +1,3 @@
-import { google } from 'googleapis';
 import jwt from 'jsonwebtoken';
 import { serialize, parse } from 'cookie';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -31,7 +30,8 @@ const COOKIE_OPTIONS = {
 /**
  * Initialize Google OAuth2 client
  */
-export function getOAuth2Client(baseUrl?: string) {
+export async function getOAuth2Client(baseUrl?: string) {
+    const { google } = await import('googleapis');
     const redirectUri = `${baseUrl || FALLBACK_BASE_URL}/api/auth/callback`;
     
     return new google.auth.OAuth2(
@@ -44,8 +44,8 @@ export function getOAuth2Client(baseUrl?: string) {
 /**
  * Generate OAuth URL for Google sign-in
  */
-export function getGoogleAuthUrl(state?: string, baseUrl?: string) {
-    const oauth2Client = getOAuth2Client(baseUrl);
+export async function getGoogleAuthUrl(state?: string, baseUrl?: string) {
+    const oauth2Client = await getOAuth2Client(baseUrl);
     
     const scopes = [
         'https://www.googleapis.com/auth/userinfo.email',
@@ -64,7 +64,8 @@ export function getGoogleAuthUrl(state?: string, baseUrl?: string) {
  * Exchange authorization code for tokens and get user info
  */
 export async function getGoogleUserInfo(code: string, baseUrl?: string) {
-    const oauth2Client = getOAuth2Client(baseUrl);
+    const { google } = await import('googleapis');
+    const oauth2Client = await getOAuth2Client(baseUrl);
     
     // Exchange code for tokens
     const { tokens } = await oauth2Client.getToken(code);

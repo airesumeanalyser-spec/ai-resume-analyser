@@ -99,7 +99,7 @@ async function handleSignIn(req: VercelRequest, res: VercelResponse) {
     try {
         const next = (req.query.next as string) || '/';
         const state = generateStateToken(next);
-        const authUrl = getGoogleAuthUrl(state, getRequestBaseUrl(req));
+        const authUrl = await getGoogleAuthUrl(state, getRequestBaseUrl(req));
 
         return res.redirect(302, authUrl);
     } catch (error) {
