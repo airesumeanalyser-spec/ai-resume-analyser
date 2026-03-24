@@ -16,9 +16,7 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'your-secret-key-min-32-chars';
 const SESSION_MAX_AGE = parseInt(process.env.SESSION_MAX_AGE || '86400000'); // 24 hours default
-const BASE_URL = process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}` 
-    : process.env.BASE_URL || 'http://localhost:5173';
+const FALLBACK_BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
 
 // Cookie configuration
 const COOKIE_NAME = 'session_token';
@@ -33,8 +31,8 @@ const COOKIE_OPTIONS = {
 /**
  * Initialize Google OAuth2 client
  */
-export function getOAuth2Client() {
-    const redirectUri = `${BASE_URL}/api/auth/callback`;
+export function getOAuth2Client(baseUrl?: string) {
+    const redirectUri = `${baseUrl || FALLBACK_BASE_URL}/api/auth/callback`;
     
     return new google.auth.OAuth2(
         GOOGLE_CLIENT_ID,
@@ -46,8 +44,8 @@ export function getOAuth2Client() {
 /**
  * Generate OAuth URL for Google sign-in
  */
-export function getGoogleAuthUrl(state?: string) {
-    const oauth2Client = getOAuth2Client();
+export function getGoogleAuthUrl(state?: string, baseUrl?: string) {
+    const oauth2Client = getOAuth2Client(baseUrl);
     
     const scopes = [
         'https://www.googleapis.com/auth/userinfo.email',
@@ -65,8 +63,8 @@ export function getGoogleAuthUrl(state?: string) {
 /**
  * Exchange authorization code for tokens and get user info
  */
-export async function getGoogleUserInfo(code: string) {
-    const oauth2Client = getOAuth2Client();
+export async function getGoogleUserInfo(code: string, baseUrl?: string) {
+    const oauth2Client = getOAuth2Client(baseUrl);
     
     // Exchange code for tokens
     const { tokens } = await oauth2Client.getToken(code);

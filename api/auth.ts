@@ -78,11 +78,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 }
 
+function getRequestBaseUrl(req: VercelRequest): string {
+    const forwardedProto = (req.headers['x-forwarded-proto'] as string | undefined)?.split(',')[0]?.trim();
+    const forwardedHost = (req.headers['x-forwarded-host'] as string | undefined)?.split(',')[0]?.trim();
+    const host = forwardedHost || req.headers.host;
+    const protocol = forwardedProto || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
+
+    if (host) {
+        return `${protocol}://${host}`;
+    }
+
+    if (process.env.VERCEL_URL) {
+        return `https://${process.env.VERCEL_URL}`;
+    }
+
+    return process.env.BASE_URL || 'http://localhost:5173';
+}
+
 async function handleSignIn(req: VercelRequest, res: VercelResponse) {
     try {
         const next = (req.query.next as string) || '/';
         const state = generateStateToken(next);
-        const authUrl = getGoogleAuthUrl(state);
+        const authUrl = getGoogleAuthUrl(state, getRequestBaseUrl(req));
 
         return res.redirect(302, authUrl);
     } catch (error) {
@@ -205,7 +222,7 @@ async function handleCallback(req: VercelRequest, res: VercelResponse) {
         }
 
         // Get user info from Google
-        const googleUser = await getGoogleUserInfo(code);
+        const googleUser = await getGoogleUserInfo(code, getRequestBaseUrl(req));
 
         if (!googleUser.email) {
             return res.redirect(302, '/?error=no_email');
